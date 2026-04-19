@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.claude/
+host-driven-verifier/scan-results/*.jsonl
+best-rational/*.dsk
