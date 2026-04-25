@@ -41,10 +41,12 @@ def build_program(expr: str) -> str:
             "10 DEFDBL A-Z",
             "20 T=657408909/209259755",
             f"30 A={expr}",
-            "40 FOR I%=0 TO 7:PRINT PEEK(VARPTR(A)+I%);:NEXT I%:PRINT",
-            '50 IF A=T THEN PRINT "EQUAL":END',
-            '60 IF A<T THEN PRINT "LESS":END',
-            '70 PRINT "GREATER"',
+            "40 V=VARPTR(A)",
+            "50 PRINT PEEK(V),PEEK(V+1),PEEK(V+2),PEEK(V+3)",
+            "60 PRINT PEEK(V+4),PEEK(V+5),PEEK(V+6),PEEK(V+7)",
+            '70 IF A=T THEN PRINT "EQUAL":END',
+            '80 IF A<T THEN PRINT "LESS":END',
+            '90 PRINT "GREATER"',
             "",
         ]
     )
@@ -65,18 +67,18 @@ def run_program(source: str) -> tuple[tuple[int, ...], str]:
     finally:
         temp_path.unlink(missing_ok=True)
 
-    byte_lines: list[tuple[int, ...]] = []
+    byte_values: list[int] = []
     compare: str | None = None
     for raw_line in result.stdout.splitlines():
         line = raw_line.strip()
         numbers = [int(token) for token in re.findall(r"-?\d+", line)]
-        if len(numbers) == 8 and all(0 <= value <= 255 for value in numbers):
-            byte_lines.append(tuple(numbers))
+        if numbers and all(0 <= value <= 255 for value in numbers):
+            byte_values.extend(numbers)
         if line in {"LESS", "EQUAL", "GREATER"}:
             compare = line
-    if not byte_lines or compare is None:
+    if len(byte_values) < 8 or compare is None:
         raise RuntimeError(f"failed to parse N88 output:\n{result.stdout}")
-    return byte_lines[0], compare
+    return tuple(byte_values[:8]), compare
 
 
 def run_check(args: argparse.Namespace) -> int:

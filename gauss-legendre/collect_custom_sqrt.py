@@ -118,6 +118,18 @@ def normalize_bytes(raw: str) -> list[str]:
     return [f"{value:02X}" for value in values]
 
 
+def read_bytes_from(lines: list[str], index: int, *, count: int = 8) -> tuple[list[str], int]:
+    values: list[int] = []
+    pos = index
+    while pos < len(lines) and len(values) < count:
+        found = [int(part) for part in re.findall(r"\d+", lines[pos])]
+        if len(found) < 2 or any(value < 0 or value > 255 for value in found):
+            break
+        values.extend(found)
+        pos += 1
+    return [f"{value:02X}" for value in values[:count]], pos
+
+
 def run_probe(config: RunnerConfig, command: tuple[str, ...]) -> str:
     proc = subprocess.run(
         command,
@@ -135,54 +147,61 @@ def run_probe(config: RunnerConfig, command: tuple[str, ...]) -> str:
 def parse_output(text: str) -> dict[str, VariantRow]:
     lines = [line.strip().rstrip("\x1a") for line in text.splitlines() if line.strip()]
     best_idx = lines.index("BEST")
-    best = normalize_bytes(lines[best_idx + 1])
+    best, i = read_bytes_from(lines, best_idx + 1)
     rows: dict[str, VariantRow] = {}
-    i = best_idx + 2
     while i + 2 < len(lines):
         match = re.fullmatch(r"(BUILTIN|NEWTON)\s+(\d+)", lines[i])
         if match is None:
             i += 1
             continue
-        current = normalize_bytes(lines[i + 1])
-        diff = lines[i + 2]
+        current, diff_i = read_bytes_from(lines, i + 1)
+        if diff_i >= len(lines):
+            break
+        diff = lines[diff_i]
         if diff.startswith("DIFF"):
             diff = diff[4:].strip()
+        if len(current) < 8:
+            i = diff_i + 1
+            continue
         osc = 0
-        step = 3
-        if i + 3 < len(lines):
-            osc_match = re.fullmatch(r"OSC\s+(\d+)", lines[i + 3])
+        next_i = diff_i + 1
+        if next_i < len(lines):
+            osc_match = re.fullmatch(r"OSC\s+(\d+)", lines[next_i])
             if osc_match is not None:
                 osc = int(osc_match.group(1))
-                step = 4
-        rows[match.group(1)] = VariantRow(
-            n=match.group(2),
-            best=best,
-            current=current,
-            diff=diff,
-            osc=osc,
-        )
-        i += step
+                next_i += 1
+        if match.group(1) not in rows:
+            rows[match.group(1)] = VariantRow(
+                n=match.group(2),
+                best=best,
+                current=current,
+                diff=diff,
+                osc=osc,
+            )
+        i = next_i
     return rows
 
 
 def parse_single_variant(text: str, label: str) -> VariantRow:
     lines = [line.strip().rstrip("\x1a") for line in text.splitlines() if line.strip()]
     best_idx = lines.index("BEST")
-    match = re.fullmatch(rf"{label}\s+(\d+)", lines[best_idx + 2])
+    best, next_i = read_bytes_from(lines, best_idx + 1)
+    match = re.fullmatch(rf"{label}\s+(\d+)", lines[next_i])
     if match is None:
         raise ValueError(f"missing {label} line")
-    diff = lines[best_idx + 4]
+    current, diff_i = read_bytes_from(lines, next_i + 1)
+    diff = lines[diff_i]
     if diff.startswith("DIFF"):
         diff = diff[4:].strip()
     osc = 0
-    if best_idx + 5 < len(lines):
-        osc_match = re.fullmatch(r"OSC\s+(\d+)", lines[best_idx + 5])
+    if diff_i + 1 < len(lines):
+        osc_match = re.fullmatch(r"OSC\s+(\d+)", lines[diff_i + 1])
         if osc_match is not None:
             osc = int(osc_match.group(1))
     return VariantRow(
         n=match.group(1),
-        best=normalize_bytes(lines[best_idx + 1]),
-        current=normalize_bytes(lines[best_idx + 3]),
+        best=best,
+        current=current,
         diff=diff,
         osc=osc,
     )

@@ -88,13 +88,25 @@ def normalize_bytes(raw: str) -> list[str]:
     return [f"{value:02X}" for value in values]
 
 
+def read_bytes_after(lines: list[str], index: int, *, count: int = 8) -> tuple[list[str], int]:
+    values: list[int] = []
+    pos = index + 1
+    while pos < len(lines) and len(values) < count:
+        found = [int(part) for part in re.findall(r"\d+", lines[pos])]
+        if len(found) < 2 or any(value < 0 or value > 255 for value in found):
+            break
+        values.extend(found)
+        pos += 1
+    return [f"{value:02X}" for value in values[:count]], pos
+
+
 def parse_basic_output(text: str) -> tuple[list[str], list[str], str]:
     lines = [line.strip().rstrip("\x1a") for line in text.splitlines() if line.strip()]
     best_idx = max(i for i, line in enumerate(lines) if line == "BEST")
     machin_idx = max(i for i, line in enumerate(lines) if line == "MACHIN")
-    best = normalize_bytes(lines[best_idx + 1])
-    machin = normalize_bytes(lines[machin_idx + 1])
-    diff = lines[machin_idx + 2]
+    best, _ = read_bytes_after(lines, best_idx)
+    machin, diff_idx = read_bytes_after(lines, machin_idx)
+    diff = lines[diff_idx]
     return best, machin, diff
 
 

@@ -57,7 +57,7 @@ python3 gauss-legendre/collect.py
 | --- | --- | --- | --- | --- | --- |
 | 6502 BASIC | `N=2` | best と一致 | **82** **49** **0F** **DB** | `0` | small FP では 2 回で best |
 | BASIC-80 | `N=3` | best と不一致 | 20 34 7A A5 **DA** **0F** **49** **82** | `3.116999880425908D-09` | MBF double ではかなり粗い |
-| N-BASIC | `N=2` | best と不一致 | B4 8B 7B E4 DB **0F** **49** **82** | `3.002137837215813D-07` | native `SQR` rerun では大きく外れる |
+| N-BASIC | `N=2` | best と不一致 | B4 8B 7B E4 DB **0F** **49** **82** | `3.002137837215813D-07` | native `SQR` では大きく外れる |
 | N88-BASIC | `N=3` | best と一致 | **C2** **68** **21** **A2** **DA** **0F** **49** **82** | `0` | 標準形 AGM で直接 best |
 | FM-7 F-BASIC | `N=2` | best と不一致 | B4 8B 7B E4 DB **0F** **49** **82** | `3.002137837215813D-07` | native `SQR` では N-BASIC と同じ |
 | FM-11 F-BASIC | `N=3` | best と不一致 | C4 **68** **21** **A2** **DA** **0F** **49** **82** | `1.110223024625157D-16` | best の 1 ulp 上 |
@@ -69,16 +69,16 @@ python3 gauss-legendre/collect.py
 補足:
 
 - 6502 BASIC と Grant BASIC は，small FP で標準形 AGM が `N=2` で直接 best に届きます．
-- 今回の rerun では，N-BASIC・N88-BASIC・FM-7 F-BASIC・FM-11 F-BASIC をすべて built-in `SQR` で揃えました．それでも結果はそろわず，MBF double 系でも処理系ごとの差がそのまま出ます．
-- MBF double 系で標準形 AGM が直接 best に届いたのは N88-BASIC だけでした．FM-11 F-BASIC は best の 1 ulp 上，N-BASIC と FM-7 F-BASIC は `N=2` で同じ値に落ちて大きく外れます．
+- 再調査では，N-BASIC・N88-BASIC・FM-7 F-BASIC・FM-11 F-BASIC を built-in `SQR` で確認しました．それでも結果はそろわず，MBF double 系でも処理系ごとの差がそのまま出ます．
+- MBF double 系で標準形 AGM が直接 best に届いたのは，確認できた範囲では N88-BASIC だけでした．FM-11 F-BASIC は best の 1 ulp 上，N-BASIC と FM-7 F-BASIC は `N=2` で大きく外れます．
 - BASIC-80 と GW-BASIC でも `ATN` 直打ちよりは改善しますが，AGM の急速収束がそのまま best 到達には結びつきません．
 - QBasic と C `double` / `__float128` は，急速に収束しても最後は best の 1 ulp か 2 ulp ずれたところで止まります．
 
 ### N-BASIC，N88-BASIC，F-BASIC
 
-以前の N-BASIC probe は，runner 側の古い制約を前提に Newton 反復で平方根を作っていました．その版では `N=3` で best の 1 ulp 下でしたが，今回 native `SQR` に戻して rerun すると，N-BASIC は FM-7 F-BASIC と同じ `N=2` の値 `B4 8B 7B E4 DB 0F 49 82` に落ちます．つまり，旧表の N-BASIC の値は current runner での標準形 AGM そのものではありませんでした．
+以前の N-BASIC probe は，runner 側の古い制約を前提に Newton 反復で平方根を作っていました．その版では `N=3` で best の 1 ulp 下でしたが，native `SQR` に戻すと，N-BASIC は `N=2` の値 `B4 8B 7B E4 DB 0F 49 82` に落ちます．つまり，旧表の N-BASIC の値は current runner での標準形 AGM そのものではありませんでした．
 
-一方で FM-11 F-BASIC は N-BASIC / FM-7 とも N88-BASIC とも一致せず，`N=3` で `C4 68 21 A2 DA 0F 49 82`，つまり best の 1 ulp 上です．したがって，今回の rerun では「built-in `SQR` が使えるかどうか」だけでは N88-BASIC の挙動は説明できません．平方根の実装と途中の丸めが処理系ごとに違い，その差が AGM の最終値にそのまま現れています．
+FM-7 F-BASIC は N-BASIC と同じく `N=2` で `B4 8B 7B E4 DB 0F 49 82` に落ちます．一方で FM-11 F-BASIC は N-BASIC とも N88-BASIC とも一致せず，`N=3` で `C4 68 21 A2 DA 0F 49 82`，つまり best の 1 ulp 上です．したがって，「built-in `SQR` が使えるかどうか」だけでは N88-BASIC の挙動は説明できません．平方根の実装と途中の丸めが処理系ごとに違い，その差が AGM の最終値にそのまま現れています．
 
 ### MBF double と独自 `SQR`
 
@@ -98,7 +98,7 @@ python3 gauss-legendre/collect_custom_sqrt.py
 | FM-11 F-BASIC | `N=3, 1.110223024625157D-16` | `N=3, 1.110223024625157D-16` | 変化なし |
 | GW-BASIC | `N=6, 1.402788518678477D-08` | `best (N=3)` | 自前平方根で best に届く |
 
-この補助実験から，`SQR` の精度が実際に主因だったケースと，そうでないケースが分かれます．BASIC-80 と GW-BASIC では自前平方根だけで best に届くので，built-in `SQR` の丸めが支配的だったと見てよさそうです．一方で FM-11 F-BASIC は自前平方根でも全く変わらず，N-BASIC と FM-7 F-BASIC も大きく改善はするものの best には届きません．したがって，MBF double 系でも「`SQR` が単精度だからダメ」と一括りにはできず，平方根以外の中間丸めも無視できません．今回の equality-stop rerun では，対象 6 系統で `OSC 0` しか出ず，2-cycle 振動は観測しませんでした．
+この補助実験から，`SQR` の精度が実際に主因だったケースと，そうでないケースが分かれます．BASIC-80 と GW-BASIC では自前平方根だけで best に届くので，built-in `SQR` の丸めが支配的だったと見てよさそうです．一方で FM-11 F-BASIC は自前平方根でも全く変わらず，N-BASIC と FM-7 F-BASIC も大きく改善はするものの best には届きません．したがって，MBF double 系でも「`SQR` が単精度だからダメ」と一括りにはできず，平方根以外の中間丸めも無視できません．equality-stop の確認では，確認できた対象で `OSC 0` しか出ず，2-cycle 振動は観測しませんでした．
 
 標準形を残したまま，同じ工夫を BASIC 側でも [collect_techniques.py](./collect_techniques.py) で試しましたが，MSX-BASIC が `4E-13` から `3E-13` へ少し良くなる程度で，やはりほとんど改善しませんでした．
 
@@ -106,7 +106,7 @@ python3 gauss-legendre/collect_custom_sqrt.py
 
 - AGM は級数より収束がずっと速く，`N` 自体は 2 か 3 か 4 で十分です．
 - それでも best に届くかどうかは別問題で，途中の平方根・乗算・減算の丸めが効きます．
-- native `SQR` に揃えても，MBF double 系の AGM の終点は N-BASIC / FM-7 / FM-11 / N88 / BASIC-80 / GW-BASIC で大きく分かれます．少なくとも今回の範囲では，N88-BASIC だけが直接 best に届きました．
+- native `SQR` に揃えても，MBF double 系の AGM の終点は N-BASIC / FM-7 / FM-11 / N88 / BASIC-80 / GW-BASIC で大きく分かれます．確認できた範囲では，N88-BASIC だけが直接 best に届きました．
 - ただし built-in `SQR` を自前の Newton 反復に置き換えると，BASIC-80 と GW-BASIC は best に届きます．この二つでは `SQR` の丸めが AGM の主因だった可能性が高いです．
 - 逆に FM-11 F-BASIC は自前平方根でも変わらず，N-BASIC と FM-7 F-BASIC も 1 ulp までは詰まるものの best には届きません．平方根だけを直しても足りない処理系が残ります．
 - 式変形で少し改善する例はありますが，今回の範囲では `_Decimal64` と MSX-BASIC でわずかに良くなる程度でした．

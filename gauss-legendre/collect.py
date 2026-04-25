@@ -103,6 +103,18 @@ def normalize_bytes(raw: str) -> list[str]:
     return [f"{value:02X}" for value in values]
 
 
+def read_bytes_from(lines: list[str], index: int, *, count: int = 8) -> tuple[list[str], int]:
+    values: list[int] = []
+    pos = index
+    while pos < len(lines) and len(values) < count:
+        found = [int(part) for part in re.findall(r"\d+", lines[pos])]
+        if len(found) < 2 or any(value < 0 or value > 255 for value in found):
+            break
+        values.extend(found)
+        pos += 1
+    return [f"{value:02X}" for value in values[:count]], pos
+
+
 def format_bytes(best: list[str], current: list[str]) -> str:
     parts = []
     for best_byte, current_byte in zip(best, current):
@@ -116,17 +128,19 @@ def format_bytes(best: list[str], current: list[str]) -> str:
 def parse_output(text: str) -> Row:
     lines = [line.strip().rstrip("\x1a") for line in text.splitlines() if line.strip()]
     best_idx = lines.index("BEST")
-    match = re.fullmatch(r"AGM\s+(\d+)", lines[best_idx + 2])
+    best, next_i = read_bytes_from(lines, best_idx + 1)
+    match = re.fullmatch(r"AGM\s+(\d+)", lines[next_i])
     if match is None:
         raise ValueError("missing AGM line")
-    diff = lines[best_idx + 4]
+    current, diff_i = read_bytes_from(lines, next_i + 1)
+    diff = lines[diff_i]
     if diff.startswith("DIFF"):
         diff = diff[4:].strip()
     return Row(
         name="",
         n=match.group(1),
-        best=normalize_bytes(lines[best_idx + 1]),
-        current=normalize_bytes(lines[best_idx + 3]),
+        best=best,
+        current=current,
         diff=diff,
     )
 

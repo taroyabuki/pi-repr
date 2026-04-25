@@ -2,7 +2,7 @@
 
 `best-rational/README.md` で使っている host-driven 検証系の実装置き場です．ここではファイルの役割と再現コマンドだけを簡潔に置きます．
 
-2026-04-06 時点の rerun 方針:
+長時間 run の方針:
 
 - exact-q sweep は `--workers 6` まで
 - 1 chunk の wall time 上限は既定で `3600s`
@@ -85,6 +85,6 @@ python3 host-driven-verifier/mbf_runner_verify.py --runtime gwbasic keycases
 - BASIC-80 / GW-BASIC
   現状は MBF nearest model を runner 経由で確認する
 
-`msxbasic_verify.py check ...` は短い `MATCH` / `MISS` の spot check には使えますが，2026-04-06 rerun では画面取りこぼしを避けるため tri-state の `msxbasic_compare_worker.py` を正に使います．
+`msxbasic_verify.py check ...` は短い `MATCH` / `MISS` の spot check には使えますが，長時間の確認では画面取りこぼしを避けるため tri-state の `msxbasic_compare_worker.py` を正に使います．
 
 最終的な結論は [best-rational/README.md](../best-rational/README.md) を参照してください．

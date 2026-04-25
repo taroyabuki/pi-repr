@@ -1,6 +1,6 @@
 # exact best の有限連分数
 
-ここでは，$\pi$ の連分数ではなく，各処理系の **exact best** を有理数とみなしたときの有限連分数を使います．
+ここでは， $\pi$ の連分数ではなく，各処理系の **exact best** を有理数とみなしたときの有限連分数を使います．
 
 つまり，stage 1 の `best` が
 
@@ -30,7 +30,7 @@ $$
 x = [a_0; a_1, a_2, \ldots]
 $$
 
-の形に書いたものを連分数と呼びます．ここで $a_0$ は整数，$a_1, a_2, \ldots$ は正の整数です．係数は，整数部分を取り，残りの小数部分の逆数を取り，その整数部分をまた取る，という操作を繰り返すと得られます．つまり
+の形に書いたものを連分数と呼びます．ここで $a_0$ は整数， $a_1, a_2, \ldots$ は正の整数です．係数は，整数部分を取り，残りの小数部分の逆数を取り，その整数部分をまた取る，という操作を繰り返すと得られます．つまり
 
 $$
 x_0=x,\quad a_n=\lfloor x_n \rfloor,\quad x_{n+1}=\frac{1}{x_n-a_n}
@@ -179,9 +179,9 @@ C と，half-ulp / nearest model で説明できる BASIC 系では次のとお�
 | C `_Decimal128` | 30 | `66627445592888887/21208174623389167` |
 | C `__float128` | 31 | `430010946591069243/136876735467187340` |
 
-`_Decimal64` と `_Decimal128` は，best に当たる `N` が，$\pi$ の係数列と exact best の finite CF がまだ一致している範囲にあるので，結果は前節と同じです．一方，small FP，MBF double，`double` / QBasic，`long double`，`__float128` では，$\pi$ の収束子をそのまま使うと，最初に当たる有理数が前節とは変わります．
+`_Decimal64` と `_Decimal128` は，best に当たる `N` が， $\pi$ の係数列と exact best の finite CF がまだ一致している範囲にあるので，結果は前節と同じです．一方，small FP，MBF double，`double` / QBasic，`long double`，`__float128` では， $\pi$ の収束子をそのまま使うと，最初に当たる有理数が前節とは変わります．
 
-MSX-BASIC だけは別です．naive な BCD half-ulp では `N=11` の `5419351/1725033` が候補になりますが，actual にはこれは `MISS` です．したがって MSX-BASIC では，$\pi$ の既知収束子をそのまま使うだけでは，この README で使っている simple な nearest-rounding の説明では best 到達を扱えません．この点は [best/README.md](../best/README.md) と [best-rational/README.md](../best-rational/README.md) のとおりです．
+MSX-BASIC だけは別です．naive な BCD half-ulp では `N=11` の `5419351/1725033` が候補になりますが，actual にはこれは `MISS` です．したがって MSX-BASIC では， $\pi$ の既知収束子をそのまま使うだけでは，この README で使っている simple な nearest-rounding の説明では best 到達を扱えません．この点は [best/README.md](../best/README.md) と [best-rational/README.md](../best-rational/README.md) のとおりです．
 
 ## 確認
 

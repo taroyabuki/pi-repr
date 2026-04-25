@@ -113,6 +113,18 @@ def normalize_bytes(raw: str) -> list[str]:
     return [f"{value:02X}" for value in values]
 
 
+def read_bytes_from(lines: list[str], index: int, *, count: int = 8) -> tuple[list[str], int]:
+    values: list[int] = []
+    pos = index
+    while pos < len(lines) and len(values) < count:
+        found = [int(part) for part in re.findall(r"\d+", lines[pos])]
+        if len(found) < 2 or any(value < 0 or value > 255 for value in found):
+            break
+        values.extend(found)
+        pos += 1
+    return [f"{value:02X}" for value in values[:count]], pos
+
+
 def _looks_like_diff(raw: str) -> bool:
     text = raw.strip()
     return re.fullmatch(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[DE][+-]?\d+)?", text) is not None
@@ -136,24 +148,26 @@ def parse_output(text: str) -> dict[str, tuple[str, list[str], str] | list[str]]
             if j >= len(lines):
                 i += 1
                 continue
-            best = normalize_bytes(lines[j])
+            best, next_i = read_bytes_from(lines, j)
             if len(best) >= 4:
                 result["BEST"] = best
-            i = j + 1
+            i = next_i
             continue
         match = re.fullmatch(r"(TERMLOW|TERMHIGH|SPLITLOW|SPLITHIGH)\s+(\d+)", line)
         if match:
             label = match.group(1)
             j = _next_nonempty(lines, i + 1)
-            k = _next_nonempty(lines, j + 1)
+            current, next_i = read_bytes_from(lines, j)
+            k = _next_nonempty(lines, next_i)
             if k >= len(lines):
                 i += 1
                 continue
-            current = normalize_bytes(lines[j])
             diff = lines[k].strip()
             if len(current) >= 4 and _looks_like_diff(diff):
                 result[label] = (match.group(2), current, diff)
-            i = k + 1
+                i = k + 1
+            else:
+                i += 1
             continue
         i += 1
     for key in ("BEST", "TERMLOW", "TERMHIGH", "SPLITLOW", "SPLITHIGH"):
