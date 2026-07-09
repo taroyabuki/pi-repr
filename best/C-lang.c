@@ -39,7 +39,7 @@ int main(void) {
     long double a_ld = 4 * atanl(1);
     printf("[long double] bytes: ");
     print_bytes(&a_ld, sizeof(a_ld));
-    report("ld hex", a_ld == 0xC.90FDAA22168C235p-2L);
+    report("ld hex", a_ld == 0x1.921fb54442d1846ap+1L);
     report("ld rounded", a_ld == 3.1415926535897932385L);
     report("ld literal", a_ld == 3.14159265358979323846L);
     report("ld rational", a_ld == 8717442233.L / 2774848045);

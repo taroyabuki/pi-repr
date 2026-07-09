@@ -1,16 +1,54 @@
-# 10進リテラルが表す値
+# リテラルが表す値
 
 `A=3.1415926535897932` のように，リテラルで設定した値が best になれば簡単です．
 
-しかし，少なくとも今回の調査では BASIC-80・N-BASIC・F-BASIC はそうなりません．調査結果を示します．★： $\pi$ の10進表現を使う方法で best に最も近くなるリテラル．★★：値が best に最も近くなるリテラル．★★★：バイト表現が best と同じになるリテラル．NG：桁数を増やして best から離れたもの．
+しかし，少なくとも今回の調査では BASIC-80・N-BASIC・F-BASIC はそうなりません．まず，2・8・16 進リテラルなら事情が変わるかを確認してから，10 進リテラルの実測結果を示します．★： $\pi$ の10進表現を使う方法で best に最も近くなるリテラル．★★：値が best に最も近くなるリテラル．★★★：バイト表現が best と同じになるリテラル．NG：桁数を増やして best から離れたもの．
+
+## 2・8・16進リテラルならどうか
+
+結論だけ言うと，内部形式が 2 進なら，2・8・16 進の実数リテラルがあるだけで話はかなり簡単になります．2，8，16 はどれも 2 の冪なので，有限の 2 進浮動小数点数をそのまま有限桁で書けます．特に 16 進は 1 桁が 4 bit に対応するため，byte 列や仮数 bit から写しやすい表記です．
+
+たとえば small FP の best は，仮想的な 2 進・8 進・16 進浮動小数点リテラルで書けば，それぞれ `0b1.10010010000111111011011p+1`，`0o1.44417666p+1`，`0x1.921fb6p+1` です．3 つとも同じ値を表します．
+
+C の 16 進浮動小数点リテラル `0x...p...` は，この目的にかなり近い表記です．`p` の後ろは 10 の指数ではなく 2 の指数です．そのため IEEE 754 binary64 の best は
+
+```c
+0x1.921fb54442d18p+1
+```
+
+と exact に書けます．同じ考え方で，このリポジトリで出てくる 2 進系の best は次のように書けます．
+
+| 形式 | `0x1...` 正規化表記 | `0x3...` 読みやすい表記 |
+| --- | --- | --- |
+| small FP | `0x1.921fb6p+1` | `0x3.243f6cp+0` |
+| MBF double | `0x1.921fb54442d184p+1` | `0x3.243f6a8885a308p+0` |
+| IEEE 754 binary64 | `0x1.921fb54442d18p+1` | `0x3.243f6a8885a3p+0` |
+| x87 80-bit extended precision | `0x1.921fb54442d1846ap+1L` | `0x3.243f6a8885a308d4p+0L` |
+| IEEE 754 binary128 | `0x1.921fb54442d18469898cc51701b8p+1Q` | `0x3.243f6a8885a308d313198a2e037p+0Q` |
+
+ここでいう正規化表記は，16 進実数リテラルとして仮数を `0x1...` にして指数で調整する普通の書き方です．読みやすい表記は，値が $\pi$ に近いことが見えるように `0x3...p+0` で始めた同じ値です．x87 80-bit も表では同じ規則で `0x1...` の正規化表記にしています．
+
+これらの 16 進リテラルは，メモリ上の byte 列をそのまま書いたものではありません．符号・指数・仮数をパックした object representation ではなく，数値として正規化した仮数 bit を左から 4 bit ずつ 16 進に読んだものです．IEEE 754 binary64 / binary128 では正規化後の先頭の `1` は格納されないので，`0x1.` の後ろが実際の fraction field に対応します．small FP や MBF double でも同じく，byte order ではなく，数学的な仮数 bit の並びを 16 進で書いています．最後の 16 進桁には，bit 数を 4 の倍数にそろえるための 0 padding が入ることがあります．
+
+x87 80-bit extended precision はここだけ少し違います．x87 は先頭の `1` も 64 bit 仮数の一部として格納するので，格納仮数をそのまま 16 進で見ると `C90FDAA22168C235` になります．それでも表では他の形式と揃えて，数値としての正規化表記 `0x1.921fb54442d1846ap+1L` を載せています．
+
+ここで重要なのは「人間が 10 進に慣れているか」ではなく，「リテラルの基数が内部形式の基数と合っているか」です．仮に 2 進浮動小数点用に 2 進・8 進・16 進の実数リテラルが標準で用意されていれば，BASIC-80・N-BASIC・N88-BASIC・F-BASIC・GW-BASIC の MBF double でも `0x1.921fb54442d184p+1` のように best を直接書けたはずです．10 進パーサの丸め方や有効桁数に悩む必要はほぼありません．
+
+ただし，古い BASIC の `&H...` や `&O...` は主に整数リテラルや `POKE` する byte の指定であって，C の `0x...p...` のような実数リテラルではありません．したがって，`&HC2` で指数 byte を書き換えることはできても，それは数値リテラルとして best を直接書いているわけではありません．
+
+つまり，人類のデフォルトが 8 進数や 16 進数だったら，2 進浮動小数点についてはかなり簡単だった可能性があります．
+
+以下は 10 進リテラルの実測です．
 
 ## C言語（x86_64, GNU gcc）
+
+次の注意は，`double`，`long double`，`__float128` のような 2 進浮動小数点型についての話です．C 言語の規格は，10 進浮動小数点定数を対象の 2 進浮動小数点形式へ変換するとき，常に IEEE 754 の最近接丸めに完全に忠実であることまでは求めていません．つまり，`3.141592653589793` が `double` の best になるかどうかは，規格そのものだけではなく処理系の実装にも依存します．一方，ここで使っている GCC や Clang の実装では，この種の定数変換は correctly rounded になっており，表のように best と一致します．`_Decimal64` や `_Decimal128` は 10 進浮動小数点型なので，この注意とは別の話です．
 
 実行方法：
 
 ```bash
-gcc -std=gnu2x decimal-literals/C-literals.c -lm -lquadmath -o /tmp/verify-decimal-literals-c
-/tmp/verify-decimal-literals-c
+gcc -std=gnu2x literals/C-literals.c -lm -lquadmath -o /tmp/verify-literals-c
+/tmp/verify-literals-c
 ```
 
 ### `_Decimal64`
@@ -78,16 +116,16 @@ best                                  | B8 01 17 C5 8C 89 69 84 D1 42 44 B5 1F 9
 実行方法：
 
 ```bash
-timeout 60 ../classic-basic/run/6502.sh --run --file decimal-literals/6502.bas
-timeout 60 ../classic-basic/run/basic80.sh --run --file decimal-literals/basic80.bas
-timeout 60 ../classic-basic/run/nbasic.sh --run --file decimal-literals/nbasic.bas
-timeout 60 ../classic-basic/run/n88basic.sh --run --file decimal-literals/n88basic.bas
-python3 decimal-literals/fbasic_digit_scan.py fm7
-python3 decimal-literals/fbasic_digit_scan.py fm11
-timeout 60 ../classic-basic/run/msxbasic.sh --run --file decimal-literals/msxbasic.bas
-timeout 60 ../classic-basic/run/gwbasic.sh --run --file decimal-literals/gwbasic.bas
-timeout 60 ../classic-basic/run/qbasic.sh --run --file decimal-literals/qbasic.bas
-timeout 60 ../classic-basic/run/grantsbasic.sh --run --file decimal-literals/grantsbasic.bas
+timeout 60 ../classic-basic/run/6502.sh --run --file literals/6502.bas
+timeout 60 ../classic-basic/run/basic80.sh --run --file literals/basic80.bas
+timeout 60 ../classic-basic/run/nbasic.sh --run --file literals/nbasic.bas
+timeout 60 ../classic-basic/run/n88basic.sh --run --file literals/n88basic.bas
+python3 literals/fbasic_digit_scan.py fm7
+python3 literals/fbasic_digit_scan.py fm11
+timeout 60 ../classic-basic/run/msxbasic.sh --run --file literals/msxbasic.bas
+timeout 60 ../classic-basic/run/gwbasic.sh --run --file literals/gwbasic.bas
+timeout 60 ../classic-basic/run/qbasic.sh --run --file literals/qbasic.bas
+timeout 60 ../classic-basic/run/grantsbasic.sh --run --file literals/grantsbasic.bas
 ```
 
 ### 6502 BASIC

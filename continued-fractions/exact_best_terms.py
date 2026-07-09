@@ -29,7 +29,7 @@ FORMATS: list[tuple[str, Fraction, tuple[str, ...]]] = [
     ("double", Fraction(884279719003555, 2**48), ("double", "QBasic")),
     (
         "long double",
-        ratio_from_hex_float("C90FDAA22168C235", 15, -2),
+        ratio_from_hex_float("1921FB54442D1846A", 16, 1),
         ("long double",),
     ),
     (

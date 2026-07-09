@@ -40,7 +40,7 @@ TARGET_DOUBLE   = Fraction(_n, _d)
 HALF_ULP_DOUBLE = Fraction(1, 2**52)
 
 # long double (x87 80-bit extended, 64-bit explicit significand)
-# best = 0xC.90FDAA22168C235p-2L = 0xC90FDAA22168C235 / 2^62
+# best = 0x1.921fb54442d1846ap+1L = 0xC90FDAA22168C235 / 2^62
 # ULP = 2^(1-63) = 2^-62, half_ulp = 2^-63
 TARGET_LDOUBLE   = Fraction(int("C90FDAA22168C235", 16), 2**62)
 HALF_ULP_LDOUBLE = Fraction(1, 2**63)

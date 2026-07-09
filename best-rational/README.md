@@ -83,14 +83,14 @@ N-BASIC については [host-driven-verifier/nbasic_mbf_model.py](../host-drive
 FM-7 F-BASIC と FM-11 F-BASIC は，まとめず別に追っています．少なくとも
 
 - FM-11 `best/fm11basic.bas` が `MATCH OK` / `ATN GT`
-- FM-11 `decimal-literals/fm11basic.bas` が `30 LT`, `31 LT`, `32 GT`, `33 GT`
+- FM-11 `literals/fm11basic.bas` が `30 LT`, `31 LT`, `32 GT`, `33 GT`
 
 を実測できました．FM-7 でも同じ境界を確認しています．
 
 N88-BASIC は，次の確認で
 
 - `best/n88basic.bas` が `MATCH OK` / `ATN GT`
-- `decimal-literals/n88basic.bas` が N-BASIC と同じ境界
+- `literals/n88basic.bas` が N-BASIC と同じ境界
 - `continued-fractions/n88basic-fourops.bas` が `FOUND 16`
 - `best-rational/probe-n88basic-keycases.bas` で
   `657408909/209259755` が `EQUAL`，
@@ -137,7 +137,7 @@ QBasic も同様に，ここでは式の直接比較を扱わず，変数に入�
 Grant BASIC については，少なくとも
 
 - `best/grantsbasic.bas` が `RAT MATCH` / `ATN GT`
-- `decimal-literals/grantsbasic.bas` で `3.1415927` が `EQ`，`3.14159265358979` が `GT`
+- `literals/grantsbasic.bas` で `3.1415927` が `EQ`，`3.14159265358979` が `GT`
 - `continued-fractions/grantsbasic-fourops.bas` が `FOUND 4`
 - `best-rational/probe-grantsbasic-roundonly.bas` を Grant runtime 直結で `q=1..29712` まで回し，
   `q=29712` で最初の exact match `93343/29712` を確認
@@ -188,7 +188,7 @@ Grant BASIC については，少なくとも
 | 6502 BASIC | probe による分母順探索 | `q=1..29712` で `ANOM` なし．最初の exact match は `q=29712`, `d=0` | 既知の最小分母まで実際に到達できる |
 | BASIC-80 | probe による分母順探索 | `q=1..11800000` で `ANOM` なし，exact match なし．完走には 1 日以上かかる見込み | full sweep は見送り，MBF model の確認へ切り替え |
 | N-BASIC | host-driven compare worker の small bench | 4 worker で `q=209259700..209259755` の 56 個に `64.8s` | full exact-q sweep は非現実的なので，MBF model と worker 照合で結論を出す |
-| N88-BASIC | runner + shared MBF model spot check | `best` / `decimal-literals` / `continued-fractions` に加え，`p#/q#` の keycase 5 件と random 20 件で bytes と `LESS/GREATER/EQUAL` が model と一致 | generic 候補では `#` を付けて double 演算に固定し，N-BASIC と同じ MBF nearest model を採用する |
+| N88-BASIC | runner + shared MBF model spot check | `best` / `literals` / `continued-fractions` に加え，`p#/q#` の keycase 5 件と random 20 件で bytes と `LESS/GREATER/EQUAL` が model と一致 | generic 候補では `#` を付けて double 演算に固定し，N-BASIC と同じ MBF nearest model を採用する |
 | F-BASIC | best / continued fractions / decimal literals の結果を併用 | FM-7 F-BASIC / FM-11 F-BASIC は `657408909/209259755` が best，`continued-fractions` は `FOUND 16`，decimal-literal 境界は N-BASIC と一致 | N-BASIC と同じ MBF model を採用 |
 | MSX-BASIC | host-driven exact-q sweep | compare worker 4 並列で `q=1..3450066` を `40604.6s` で完走 | half-ulp では足りないので，この方式で `10838702/3450066` を確定 |
 | GW-BASIC | wrapper 経由の分母順探索 | `q=1..209259755` で `ANOM` なし．最初の exact match は `q=209259755`, `d=0` | 既知の最小分母まで実際に到達できる |
