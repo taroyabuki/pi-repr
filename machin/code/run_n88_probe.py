@@ -15,7 +15,7 @@ from n88basic_cli import N88BasicCLI, _load_program_source_lines
 from run_control_bridge import RUN_ERR_OK, RUN_ERR_PROTOCOL, RUN_ERR_QUEUE_FULL, RunControlSession
 
 
-def queue_token(session: RunControlSession, token: str, *, timeout: float = 5.0) -> None:
+def queue_token(session: RunControlSession, token: str, *, timeout: float = 30.0) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         ok, response = session.queue(token)
