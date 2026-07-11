@@ -203,3 +203,20 @@ timeout 300 ../classic-basic/run/gwbasic.sh --run --file continued-fractions/gwb
 timeout 300 ../classic-basic/run/qbasic.sh --run --file continued-fractions/qbasic-fourops.bas
 timeout 300 ../classic-basic/run/grantsbasic.sh --run --file continued-fractions/grantsbasic-fourops.bas
 ```
+
+## A の連分数と $\pi$ の連分数の比較
+
+ここで $A$ は各形式の exact best を有理数と見た値です．この章で直接比較できるのは，$A$ の有限連分数の収束子と，真の $\pi$ の連分数の収束子です．
+
+| 対象 | $A$ CF で最初に best になる値 | $\pi$ CF で最初に best になる値 | 分母だけを見た比較 |
+| --- | --- | --- | --- |
+| small FP（6502 BASIC, Grant BASIC） | `N=4`, `154758/49261` | `N=4`, `103993/33102` | $\pi$ CF のほうが小さい |
+| MBF double（BASIC-80, N-BASIC, N88-BASIC, F-BASIC, GW-BASIC） | `N=16`, `657408909/209259755` | `N=16`, `1068966896/340262731` | $A$ CF のほうが小さい |
+| MSX-BASIC | `N=13`, `2012767689/640683854` | best にならない | 比較対象外 |
+| IEEE 754 binary64（C `double`, QBasic） | `N=13`, `245850922/78256779` | `N=14`, `245850922/78256779` | 同じ |
+| x87 80-bit（C `long double`） | `N=19`, `8717442233/2774848045` | `N=19`, `14885392687/4738167652` | $A$ CF のほうが小さい |
+| C `_Decimal64` | `N=12`, `80143857/25510582` | `N=12`, `80143857/25510582` | 同じ |
+| C `_Decimal128` | `N=30`, `66627445592888887/21208174623389167` | `N=30`, `66627445592888887/21208174623389167` | 同じ |
+| C `__float128` | `N=31`, `563265837776847017/179293084713965674` | `N=31`, `430010946591069243/136876735467187340` | $\pi$ CF のほうが小さい |
+
+この範囲では，$\pi$ の連分数に替えても「最初に best に入る `N`」は改善せず，同じか悪化します．一方，分母の大小だけを見ると，$A$ CF が小さい場合も $\pi$ CF が小さい場合もあります．ただし，これはあくまで二つの連分数列の収束子どうしの比較です．best と一致する有理数全体での本当の分母最小は，ここでは確定していないので，[best-rational/README.md](../best-rational/README.md) の値も参考として扱います．
